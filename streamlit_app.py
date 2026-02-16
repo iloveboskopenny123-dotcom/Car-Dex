@@ -81,78 +81,19 @@ import streamlit as st
 from PIL import Image
 import datetime
 
-# 1. --- PRO DESIGN LAYER (The Chassis) ---
-st.set_page_config(page_title="Car-Dex Terminal", page_icon="🏎️", layout="wide")
-
-st.markdown("""
-    <style>
-    .stApp { background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%); color: #ffffff; }
-    [data-testid="stSidebar"] { background-color: #111; border-right: 2px solid #ff1f1f; }
-    .car-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border-left: 5px solid #ff1f1f;
-        border-radius: 15px;
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-    h1, h2, h3 { color: #ff1f1f; font-family: 'Courier New', monospace; text-transform: uppercase; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# 2. --- DATA INITIALIZATION ---
-if "my_cars" not in st.session_state:
-    st.session_state.my_cars = []
-
-# Our Brand/Model Dictionary
 car_data = {
-    "Ferrari": ["SF90 XX Stradale", "SF90 Stradale", "296 GTB", "458 Italia", "F40"],
-    "Lamborghini": ["Revuelto", "Huracán STO", "Aventador SVJ", "Urus"],
-    "Porsche": ["911 GT3 RS", "718 Cayman GT4 RS", "918 Spyder"],
+    "Ferrari": ["SF90 XX Stradale", "SF90 Stradale", "296 GTB", "812 Competizione", "458 Italia", "LaFerrari", "F40", "Enzo"],
+    "Lamborghini": ["Revuelto", "Temerario", "Huracán STO", "Aventador SVJ", "Urus", "Murciélago", "Gallardo"],
+    "Porsche": ["911 GT3 RS", "911 Turbo S", "718 Cayman GT4 RS", "Taycan", "918 Spyder", "Carrera GT", "Macan"],
+    "McLaren": ["750S", "720S", "P1", "Senna", "Artura", "570S", "600LT"],
+    "BMW": ["M3 Competition", "M4 CSL", "M5 CS", "i8", "Z4", "X5 M", "8 Series"],
+    "Mercedes-Benz": ["AMG GT Black Series", "G-Wagon", "SLS AMG", "C63 AMG", "S-Class"],
+    "Audi": ["R8 V10", "RS6 Avant", "RS7", "e-tron GT", "TT RS"],
+    "Tesla": ["Model S Plaid", "Model X", "Model 3", "Model Y", "Cybertruck", "Roadster"],
+    "Toyota": ["Supra MK5", "GR Corolla", "Camry", "RAV4", "Tacoma", "86"],
+    "Nissan": ["GT-R R35", "Z (RZ34)", "370Z", "Altima", "Skyline GT-R"],
+    "Ford": ["GT", "Mustang Shelby GT500", "F-150 Raptor", "Focus RS"],
+    "Chevrolet": ["Corvette Z06", "Corvette E-Ray", "Camaro ZL1", "Silverado"],
+    "Aviation": ["F-22 Raptor", "F-35 Lightning II", "Blue Angel #1", "C-130 Fat Albert"],
     "Other": []
 }
-
-# 3. --- THE SCANNER SIDEBAR (The Intake) ---
-with st.sidebar:
-    st.header("📡 SCANNER")
-    uploaded_file = st.file_uploader("Upload Shot", type=["jpg", "png"])
-    
-    # --- DEPENDENT DROPDOWNS START HERE ---
-    brand = st.selectbox("Select Brand", options=list(car_data.keys()))
-    
-    # Check if 'Other' is picked for manual entry
-    if brand == "Other":
-        model = st.text_input("Enter Model Name")
-    else:
-        model = st.selectbox("Select Model", options=car_data[brand])
-    
-    rarity = st.select_slider("Tier", options=["Common", "Rare", "Legendary"])
-    
-    if st.button("SYNC TO DEX"):
-        if uploaded_file and model:
-            img = Image.open(uploaded_file)
-            new_entry = {
-                "name": f"{brand} {model}" if brand != "Other" else model,
-                "rarity": rarity,
-                "img": img,
-                "time": datetime.datetime.now().strftime("%H:%M")
-            }
-            st.session_state.my_cars.append(new_entry)
-            st.toast("Target Locked!")
-        else:
-            st.error("Upload a photo first!")
-
-# 4. --- THE MAIN DISPLAY (The Gallery) ---
-st.title("🏎️ CAR-DEX // DATABASE")
-
-if not st.session_state.my_cars:
-    st.info("No active targets in range. Open the scanner to log a spot.")
-else:
-    for car in reversed(st.session_state.my_cars):
-        st.markdown(f"""
-            <div class="car-card">
-                <h3>{car['name']}</h3>
-                <p>CLASS: {car['rarity'].upper()} | LOG TIME: {car['time']}</p>
-            </div>
-        """, unsafe_allow_html=True)
-        st.image(car["img"], width=400)
