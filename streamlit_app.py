@@ -1,22 +1,20 @@
-    # Cimport streamlit as st
+import streamlit as st
 from PIL import Image
 import datetime
 
-# 1. --- PRO DESIGN LAYER ---
+# 1. --- CONFIG & STYLE (Must be at the top) ---
 st.set_page_config(page_title="Car-Dex Terminal", page_icon="🏎️", layout="wide")
 
 st.markdown("""
     <style>
-    /* Dark Background */
     .stApp {
         background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-        color: #ffffff;
+        color: white;
     }
     [data-testid="stSidebar"] {
         background-color: #111;
         border-right: 2px solid #444;
     }
-    /* Base Card Styling */
     .car-card {
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
@@ -25,12 +23,7 @@ st.markdown("""
         padding: 20px;
         margin-bottom: 20px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        transition: transform 0.2s;
     }
-    .car-card:hover {
-        transform: scale(1.02);
-    }
-    /* Text Styling */
     h1, h2, h3 {
         font-family: 'Courier New', monospace;
         text-transform: uppercase;
@@ -39,10 +32,11 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. --- DATA STORAGE & LISTS ---
+# 2. --- DATA SETUP ---
 if "my_cars" not in st.session_state:
     st.session_state.my_cars = []
 
+# The Database
 car_data = {
     "Ferrari": ["SF90 XX Stradale", "SF90 Stradale", "296 GTB", "812 Competizione", "458 Italia", "LaFerrari", "F40", "Enzo"],
     "Lamborghini": ["Revuelto", "Temerario", "Huracán STO", "Aventador SVJ", "Urus", "Murciélago", "Gallardo"],
@@ -60,19 +54,24 @@ car_data = {
     "Other": [] 
 }
 
-# 3. --- THE SCANNER SIDEBAR ---
+# 3. --- SCANNER SIDEBAR ---
 with st.sidebar:
     st.header("📡 TARGET SCANNER")
     uploaded_file = st.file_uploader("Upload Shot", type=["jpg", "png", "jpeg"])
     
+    # THE FIX: We add a 'key' to the selectbox so it resets when brand changes
     brand = st.selectbox("Select Brand", options=list(car_data.keys()))
     
+    # Logic for Model Selection
     if brand == "Other":
         model = st.text_input("Enter Manual Model Name")
+    elif not car_data[brand]:
+        # Fallback if a brand has an empty list in the code
+        model = st.text_input("Enter Model Name", key=f"input_{brand}")
     else:
-        model = st.selectbox("Select Model", options=car_data[brand])
+        # THE FIX: key=f"select_{brand}" forces a fresh dropdown for every brand
+        model = st.selectbox("Select Model", options=car_data[brand], key=f"select_{brand}")
             
-    # UPDATED: The new color tier list
     rarity = st.select_slider("Class Tier", options=["Common", "Uncommon", "Rare", "Legendary"])
     
     if st.button("LOG TARGET TO DEX"):
@@ -85,11 +84,11 @@ with st.sidebar:
                 "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             }
             st.session_state.my_cars.append(new_entry)
-            st.toast("Target Successfully Logged!", icon="✅")
+            st.toast("Target Logged!", icon="✅")
         else:
-            st.error("⚠️ Error: Upload a photo first!")
+            st.error("⚠️ Upload a photo and pick a model!")
 
-# 4. --- THE MAIN DISPLAY ---
+# 4. --- MAIN DISPLAY ---
 st.title("🏎️ CAR-DEX // DATABASE")
 
 if not st.session_state.my_cars:
@@ -97,23 +96,19 @@ if not st.session_state.my_cars:
 else:
     for car in reversed(st.session_state.my_cars):
         
-        # --- COLOR LOGIC ---
-        # This dictionary maps your Rarity text to actual Hex Colors
+        # Color Logic
         color_map = {
             "Common": "#A9A9A9",    # Grey
             "Uncommon": "#32CD32",  # Green
             "Rare": "#9370DB",      # Purple
             "Legendary": "#FFD700"  # Gold
         }
-        
-        # Get the color for this specific car
         this_color = color_map.get(car['rarity'], "white")
         
-        # We inject the color into the border-left and the text span
         st.markdown(f"""
             <div class="car-card" style="border-left: 5px solid {this_color};">
-                <h3 style="margin-bottom: 5px;">{car['name']}</h3>
-                <p style="font-family: monospace; font-size: 14px; margin: 0;">
+                <h3 style="margin-bottom: 5px; color: white;">{car['name']}</h3>
+                <p style="font-family: monospace; font-size: 14px; margin: 0; color: #ccc;">
                     TIER: <span style="color: {this_color}; font-weight: bold; font-size: 16px;">{car['rarity'].upper()}</span> 
                     | LOG: {car['time']}
                 </p>
@@ -121,4 +116,3 @@ else:
         """, unsafe_allow_html=True)
         
         st.image(car["img"], use_container_width=True)
-
