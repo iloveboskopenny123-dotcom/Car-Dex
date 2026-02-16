@@ -3,33 +3,18 @@ from PIL import Image
 import datetime
 
 # 1. --- CONFIG & STYLE ---
-st.set_page_config(page_title="RSF Car-Dex", page_icon="🏎️", layout="wide")
+st.set_page_config(page_title="Hyper-Dex Terminal", page_icon="🏎️", layout="wide")
 
 st.markdown("""
     <style>
-    /* Dark Background */
-    .stApp {
-        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-        color: white;
-    }
-    [data-testid="stSidebar"] {
-        background-color: #111;
-        border-right: 2px solid #444;
-    }
+    .stApp { background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); color: white; }
+    [data-testid="stSidebar"] { background-color: #111; border-right: 2px solid #444; }
     .car-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 15px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px;
+        padding: 20px; margin-bottom: 20px;
     }
-    h1, h2, h3 {
-        font-family: 'Courier New', monospace;
-        text-transform: uppercase;
-        color: white;
-    }
+    h1, h2, h3 { font-family: 'Courier New', monospace; text-transform: uppercase; color: white; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -37,10 +22,9 @@ st.markdown("""
 if "my_cars" not in st.session_state:
     st.session_state.my_cars = []
 
-# THE RSF / SOUTH OC / CARS N COPTERS DATABASE
 car_data = {
     "Koenigsegg": ["Jesko", "Jesko Absolut", "Gemera", "Regera", "Agera RS", "One:1", "CCX"],
-    "Pagani": ["Utopia", "Huayra R", "Huayra BC", "Huayra Roadster", "Zonda Cinques", "Zonda R"],
+    "Pagani": ["Utopia", "Huayra R", "Huayra BC", "Huayra Roadster", "Zonda Cinque", "Zonda R"],
     "Bugatti": ["Tourbillon", "Chiron Super Sport", "Chiron Pur Sport", "Divo", "Veyron", "Bolide"],
     "Ferrari": ["SF90 XX", "LaFerrari", "Daytona SP3", "Monza SP1/SP2", "Enzo", "F40", "F50", "288 GTO", "812 Comp"],
     "Lamborghini": ["Revuelto", "Countach LPI 800-4", "Sian", "Centenario", "Veneno", "Aventador SVJ", "Huracán STO"],
@@ -60,16 +44,20 @@ with st.sidebar:
     # Brand Selection
     brand = st.selectbox("Select Manufacturer", options=list(car_data.keys()))
     
-    # Model Selection Logic
+    # --- DYNAMIC MODEL LOGIC ---
     if brand == "Other":
-        model = st.text_input("Enter Manual Model Name")
-    elif not car_data[brand]:
-        model = st.text_input("Enter Model Name")
+        model = st.text_input("Enter Manual Brand & Model")
     else:
-        # The Key fixes the crash
-        model = st.selectbox("Select Model", options=car_data[brand], key=f"select_{brand}")
+        # We add "Other / Custom" to the end of every brand's list
+        model_options = car_data[brand] + ["Other / Custom"]
+        model_choice = st.selectbox("Select Model", options=model_options, key=f"select_{brand}")
+        
+        # If they pick "Other / Custom", show a text box
+        if model_choice == "Other / Custom":
+            model = st.text_input(f"Enter custom {brand} model name")
+        else:
+            model = model_choice
             
-    # Rarity Slider
     rarity = st.select_slider("Rarity Tier", options=["Common", "Uncommon", "Rare", "Legendary", "Unicorn"])
     
     if st.button("LOG SIGHTING"):
@@ -84,7 +72,7 @@ with st.sidebar:
             st.session_state.my_cars.append(new_entry)
             st.toast("Target Logged!", icon="✅")
         else:
-            st.error("⚠️ Upload a photo and pick a model!")
+            st.error("⚠️ Upload a photo and enter a model name!")
 
 # 4. --- MAIN DISPLAY ---
 st.title("🏎️ RSF CAR-DEX")
@@ -93,14 +81,9 @@ if not st.session_state.my_cars:
     st.info("System Empty. No targets detected.")
 else:
     for car in reversed(st.session_state.my_cars):
-        
-        # Color Logic
         color_map = {
-            "Common": "#A9A9A9",    # Grey
-            "Uncommon": "#32CD32",  # Green
-            "Rare": "#9370DB",      # Purple
-            "Legendary": "#FFD700", # Gold
-            "Unicorn": "#00FFFF"    # Cyan (Glowing Blue for the craziest spots)
+            "Common": "#A9A9A9", "Uncommon": "#32CD32", "Rare": "#9370DB", 
+            "Legendary": "#FFD700", "Unicorn": "#00FFFF"
         }
         this_color = color_map.get(car['rarity'], "white")
         
@@ -113,5 +96,4 @@ else:
                 </p>
             </div>
         """, unsafe_allow_html=True)
-        
         st.image(car["img"], use_container_width=True)
