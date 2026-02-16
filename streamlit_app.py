@@ -2,11 +2,12 @@ import streamlit as st
 from PIL import Image
 import datetime
 
-# 1. --- CONFIG & STYLE (Must be at the top) ---
-st.set_page_config(page_title="Car-Dex Terminal", page_icon="🏎️", layout="wide")
+# 1. --- CONFIG & STYLE ---
+st.set_page_config(page_title="RSF Car-Dex", page_icon="🏎️", layout="wide")
 
 st.markdown("""
     <style>
+    /* Dark Background */
     .stApp {
         background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
         color: white;
@@ -36,45 +37,42 @@ st.markdown("""
 if "my_cars" not in st.session_state:
     st.session_state.my_cars = []
 
-# The Database
+# THE RSF / SOUTH OC / CARS N COPTERS DATABASE
 car_data = {
-    "Ferrari": ["SF90 XX Stradale", "SF90 Stradale", "296 GTB", "812 Competizione", "458 Italia", "LaFerrari", "F40", "Enzo"],
-    "Lamborghini": ["Revuelto", "Temerario", "Huracán STO", "Aventador SVJ", "Urus", "Murciélago", "Gallardo"],
-    "Porsche": ["911 GT3 RS", "911 Turbo S", "718 Cayman GT4 RS", "Taycan", "918 Spyder", "Carrera GT", "Macan"],
-    "McLaren": ["750S", "720S", "P1", "Senna", "Artura", "570S", "600LT"],
-    "BMW": ["M3 Competition", "M4 CSL", "M5 CS", "i8", "Z4", "X5 M"],
-    "Mercedes-Benz": ["AMG GT Black Series", "G-Wagon", "SLS AMG", "C63 AMG"],
-    "Audi": ["R8 V10", "RS6 Avant", "RS7", "e-tron GT"],
-    "Tesla": ["Model S Plaid", "Cybertruck", "Model 3", "Roadster"],
-    "Toyota": ["Supra MK5", "GR Corolla", "Camry", "Tacoma", "86"],
-    "Ford": ["GT", "Mustang Shelby GT500", "F-150 Raptor", "Focus RS"],
-    "Chevrolet": ["Corvette Z06", "Corvette E-Ray", "Camaro ZL1"],
-    "Nissan": ["GT-R R35", "Z (RZ34)", "Skyline GT-R"],
-    "Aviation": ["F-22 Raptor", "F-35 Lightning II", "Blue Angel #1", "C-130 Fat Albert"],
+    "Koenigsegg": ["Jesko", "Jesko Absolut", "Gemera", "Regera", "Agera RS", "One:1", "CCX"],
+    "Pagani": ["Utopia", "Huayra R", "Huayra BC", "Huayra Roadster", "Zonda Cinques", "Zonda R"],
+    "Bugatti": ["Tourbillon", "Chiron Super Sport", "Chiron Pur Sport", "Divo", "Veyron", "Bolide"],
+    "Ferrari": ["SF90 XX", "LaFerrari", "Daytona SP3", "Monza SP1/SP2", "Enzo", "F40", "F50", "288 GTO", "812 Comp"],
+    "Lamborghini": ["Revuelto", "Countach LPI 800-4", "Sian", "Centenario", "Veneno", "Aventador SVJ", "Huracán STO"],
+    "McLaren": ["P1", "Senna", "Senna GTR", "Speedtail", "Elva", "765LT", "Solus GT", "F1"],
+    "Porsche": ["918 Spyder", "Carrera GT", "911 GT3 RS (992)", "911 S/T", "959", "Dakar"],
+    "Hyper-Luxury": ["Rolls-Royce Spectre", "Rolls-Royce Cullinan", "Bentley Bacalar", "Aston Martin Valkyrie", "Aston Martin Valour"],
+    "Aviation (Copters)": ["Eurocopter AS350", "Bell 407", "Robinson R44", "AgustaWestland AW109", "Sikorsky S-76"],
+    "JDM Legends": ["Lexus LFA", "Nissan GT-R Nismo", "Honda NSX-R (NA2)", "Toyota 2000GT"],
     "Other": [] 
 }
 
 # 3. --- SCANNER SIDEBAR ---
 with st.sidebar:
-    st.header("📡 TARGET SCANNER")
+    st.header("📡 HYPER SCANNER")
     uploaded_file = st.file_uploader("Upload Shot", type=["jpg", "png", "jpeg"])
     
-    # THE FIX: We add a 'key' to the selectbox so it resets when brand changes
-    brand = st.selectbox("Select Brand", options=list(car_data.keys()))
+    # Brand Selection
+    brand = st.selectbox("Select Manufacturer", options=list(car_data.keys()))
     
-    # Logic for Model Selection
+    # Model Selection Logic
     if brand == "Other":
         model = st.text_input("Enter Manual Model Name")
     elif not car_data[brand]:
-        # Fallback if a brand has an empty list in the code
-        model = st.text_input("Enter Model Name", key=f"input_{brand}")
+        model = st.text_input("Enter Model Name")
     else:
-        # THE FIX: key=f"select_{brand}" forces a fresh dropdown for every brand
+        # The Key fixes the crash
         model = st.selectbox("Select Model", options=car_data[brand], key=f"select_{brand}")
             
-    rarity = st.select_slider("Class Tier", options=["Common", "Uncommon", "Rare", "Legendary"])
+    # Rarity Slider
+    rarity = st.select_slider("Rarity Tier", options=["Common", "Uncommon", "Rare", "Legendary", "Unicorn"])
     
-    if st.button("LOG TARGET TO DEX"):
+    if st.button("LOG SIGHTING"):
         if uploaded_file and model:
             img = Image.open(uploaded_file)
             new_entry = {
@@ -89,7 +87,7 @@ with st.sidebar:
             st.error("⚠️ Upload a photo and pick a model!")
 
 # 4. --- MAIN DISPLAY ---
-st.title("🏎️ CAR-DEX // DATABASE")
+st.title("🏎️ RSF CAR-DEX")
 
 if not st.session_state.my_cars:
     st.info("System Empty. No targets detected.")
@@ -101,7 +99,8 @@ else:
             "Common": "#A9A9A9",    # Grey
             "Uncommon": "#32CD32",  # Green
             "Rare": "#9370DB",      # Purple
-            "Legendary": "#FFD700"  # Gold
+            "Legendary": "#FFD700", # Gold
+            "Unicorn": "#00FFFF"    # Cyan (Glowing Blue for the craziest spots)
         }
         this_color = color_map.get(car['rarity'], "white")
         
