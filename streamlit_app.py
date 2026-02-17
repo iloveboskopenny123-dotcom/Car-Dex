@@ -6,27 +6,33 @@ import datetime
 # 1. --- CONFIG & STYLE ---
 st.set_page_config(page_title="Hyper-Dex Lite", page_icon="🏎️")
 
-st.markdown("""
-    <style>
-    .stApp { background: #0f0c29; color: white; }
-    .car-card { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; border-left: 5px solid #FFD700; margin-bottom: 10px; }
-    </style>
-    """, unsafe_allow_html=True)
+# 2. --- SESSION STATE (Memory) ---
+# This prevents the "disappearing photo" glitch
+if "last_uploaded_image" not in st.session_state:
+    st.session_state.last_uploaded_image = None
 
-# 2. --- CONNECT TO SHEET ---
-# This uses the public link you put in your Secrets
+# 3. --- CONNECT TO SHEET ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# 3. --- SCANNER SIDEBAR ---
+# 4. --- SCANNER SIDEBAR ---
 with st.sidebar:
     st.header("📡 HYPER SCANNER")
-    brand = st.selectbox("Brand", ["Ferrari", "Lamborghini", "Porsche", "McLaren", "Other"])
+    
+    # The Photo Uploader
+    uploaded_file = st.file_uploader("Upload Car Photo", type=["jpg", "png", "jpeg"])
+    
+    # If a file is uploaded, show a tiny preview in the sidebar so you know it's there
+    if uploaded_file:
+        st.session_state.last_uploaded_image = uploaded_file
+        st.image(uploaded_file, caption="Photo Loaded ✅", width=150)
+
+    brand = st.selectbox("Brand", ["Ferrari", "Lamborghini", "Porsche", "McLaren", "Koenigsegg", "Pagani", "Bugatti", "Other"])
     model = st.text_input("Model Name")
-    rarity = st.selectbox("Rarity", ["Common", "Uncommon", "Rare", "Legendary", "Unicorn"])
+    rarity = st.select_slider("Rarity", options=["Common", "Uncommon", "Rare", "Legendary", "Unicorn"])
     
     if st.button("LOG SIGHTING"):
-        if model:
-            # Create a new row of data
+        if model and uploaded_file:
+            # Create a new row (Note: Since this is Lite, we log the text to the sheet)
             new_data = pd.DataFrame([{
                 "brand": brand,
                 "name": model,
@@ -34,30 +40,30 @@ with st.sidebar:
                 "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             }])
             
-            # Get existing data and add the new row
-            existing_data = conn.read()
-            updated_df = pd.concat([existing_data, new_data], ignore_index=True)
-            
-            # Save back to Google Sheets
-            conn.update(data=updated_df)
-            st.success("Target Saved!")
+            # Save to Google Sheets
+            try:
+                existing_data = conn.read()
+                updated_df = pd.concat([existing_data, new_data], ignore_index=True)
+                conn.update(data=updated_df)
+                st.success(f"Logged {model} to your Google Sheet!")
+                st.balloons()
+            except:
+                st.error("Connection Error. Check your Sheet link in Secrets!")
         else:
-            st.error("Please enter a model name")
+            st.warning("⚠️ Please upload a photo and enter the model name first!")
 
-# 4. --- DISPLAY ---
-st.title("🏎️ RSF CAR-DEX (LIVE)")
+# 5. --- MAIN DISPLAY ---
+st.title("🏎️ RSF CAR-DEX")
 
 try:
     df = conn.read()
     if not df.empty:
+        # Show the list of cars caught
         for index, row in df.iloc[::-1].iterrows():
-            st.markdown(f"""
-                <div class="car-card">
-                    <h4>{row['brand']} {row['name']}</h4>
-                    <p>TIER: {row['rarity']} | LOGGED: {row['time']}</p>
-                </div>
-            """, unsafe_allow_html=True)
+            with st.container(border=True):
+                st.subheader(f"{row['brand']} {row['name']}")
+                st.write(f"**TIER:** {row['rarity']} | **LOGGED:** {row['time']}")
     else:
-        st.info("No cars logged yet!")
-except Exception as e:
-    st.warning("Database connecting... make sure your Sheet link is in Secrets!")
+        st.info("The streets are quiet... No cars logged yet.")
+except:
+    st.info("Connect your Google Sheet link in the Streamlit Settings to see the database.")
