@@ -5,7 +5,9 @@ import os
 from PIL import Image
 
 # 1. --- CONFIG & DIRECTORY SETUP ---
-st.set_page_config(page_title="Hyper-Dex Admin", page_icon="🏎️")
+# This changes the title in your browser tab
+st.set_page_config(page_title="CarDex", page_icon="🏎️")
+
 DB_FILE = "cardex_db.csv"
 IMG_DIR = "saved_cars"
 
@@ -24,7 +26,12 @@ with st.sidebar:
     uploaded_file = st.file_uploader("Upload Car Photo", type=["jpg", "png", "jpeg"])
     
     brand_choice = st.selectbox("Brand", ["McLaren", "Ferrari", "Lamborghini", "Porsche", "Koenigsegg", "Pagani", "Bugatti", "Other"])
-    brand = st.text_input("Type Brand Name") if brand_choice == "Other" else brand_choice
+    
+    # "Other" Brand Logic
+    if brand_choice == "Other":
+        brand = st.text_input("Type Brand Name")
+    else:
+        brand = brand_choice
 
     model = st.text_input("Model Name")
     rarity = st.selectbox("Rarity", ["Common", "Uncommon", "Rare", "Legendary", "Unicorn"])
@@ -48,11 +55,11 @@ with st.sidebar:
         else:
             st.error("Missing Info!")
 
-# 4. --- MAIN DISPLAY & DELETE LOGIC ---
-st.title("🏎️ RSF CAR-DEX")
+# 4. --- MAIN DISPLAY ---
+# This is the line that changes the title you circled!
+st.title("CarDex")
 
 if not df.empty:
-    # reversed loop so newest is on top
     for index, row in df.iloc[::-1].iterrows():
         with st.container(border=True):
             st.subheader(f"{row['brand']} {row['name']}")
@@ -61,19 +68,11 @@ if not df.empty:
             if os.path.exists(str(row['img_path'])):
                 st.image(row['img_path'], use_container_width=True)
             
-            # --- THE DELETE BUTTON ---
-            # We give each button a unique 'key' based on its index
             if st.button(f"🗑️ DELETE {row['name']}", key=f"delete_{index}"):
-                # 1. Delete the actual image file from the folder
                 if os.path.exists(str(row['img_path'])):
                     os.remove(row['img_path'])
-                
-                # 2. Remove the row from the CSV
                 df = df.drop(index)
                 df.to_csv(DB_FILE, index=False)
-                
-                # 3. Refresh the app
-                st.toast(f"Entry {row['name']} removed from database.")
                 st.rerun()
 else:
     st.info("No cars logged yet.")
